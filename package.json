@@ -1,0 +1,24 @@
+{
+  "name": "word-extractor",
+  "version": "1.0.0",
+  "description": "Word文档信息提取工具",
+  "main": "index.html",
+  "scripts": {
+    "dev": "node proxy-server.js",
+    "serve": "python -m http.server 8080",
+    "install-deps": "npm install express http-proxy-middleware openai",
+    "test-api": "node test-kimi-k2.js"
+  },
+  "keywords": [
+    "word",
+    "extraction",
+    "kimi",
+    "ai"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "express": "^4.21.2",
+    "http-proxy-middleware": "^2.0.9"
+  }
+}

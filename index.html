@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word文档信息提取工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>Word文档信息提取工具</h1>
+            <p class="subtitle">自动提取学校、学科、讲课教师、班级信息并生成表格</p>
+        </header>
+
+        <main class="main">
+            <!-- 文件上传区域 -->
+            <section class="upload-section">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">
+                        <h3>上传Word文档</h3>
+                        <p>支持 .doc 和 .docx 格式，拖拽文件到此处或点击选择</p>
+                        <p class="multi-file-hint">✨ 支持同时选择多个文件进行批量处理</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".doc,.docx" multiple hidden>
+                    <button class="upload-btn" id="uploadBtn">选择文件</button>
+                </div>
+                
+                <!-- 文件信息显示 -->
+                <div class="file-info" id="fileInfo" style="display: none;">
+                    <div class="file-details">
+                        <span class="file-name" id="fileName"></span>
+                        <span class="file-size" id="fileSize"></span>
+                    </div>
+                    <button class="remove-file" id="removeFile">✕</button>
+                </div>
+            </section>
+
+            <!-- 处理按钮 -->
+            <section class="action-section">
+                <button class="process-btn" id="processBtn" disabled>
+                    <span class="btn-text">开始处理</span>
+                    <div class="loading-spinner" style="display: none;"></div>
+                </button>
+            </section>
+
+            <!-- 状态显示区域 -->
+            <section class="status-section" id="statusSection" style="display: none;">
+                <div class="status-content">
+                    <div class="status-icon" id="statusIcon"></div>
+                    <div class="status-text" id="statusText"></div>
+                </div>
+                <div class="progress-bar" id="progressBar" style="display: none;">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </section>
+
+            <!-- 结果展示区域 -->
+            <section class="result-section" id="resultSection" style="display: none;">
+                <div class="result-header">
+                    <h3>提取结果</h3>
+                    <div class="result-actions">
+                        <button class="copy-btn" id="copyBtn">复制表格</button>
+                        <button class="download-btn" id="downloadBtn">下载CSV</button>
+                    </div>
+                </div>
+                <div class="result-content" id="resultContent">
+                    <!-- 结果表格将在这里动态生成 -->
+                </div>
+            </section>
+
+            <!-- 错误提示区域 -->
+            <section class="error-section" id="errorSection" style="display: none;">
+                <div class="error-content">
+                    <div class="error-icon">⚠️</div>
+                    <div class="error-message" id="errorMessage"></div>
+                    <button class="retry-btn" id="retryBtn">重试</button>
+                </div>
+            </section>
+        </main>
+
+        <footer class="footer">
+            <p>使用 Kimi AI 技术驱动</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
