@@ -355,7 +355,7 @@ async function getFileContent(fileId) {
 // 使用Kimi处理文档（带重试机制）
 async function processWithKimi(fileId, retryCount = 0) {
     const maxRetries = 3;
-    const baseDelay = 2000; // 2秒基础延迟
+    const baseDelay = 1000; // 1秒基础延迟，更快重试
     
     // 首先获取文件内容
     const fileContent = await getFileContent(fileId);
@@ -381,9 +381,9 @@ ${fileContent}`
                 content: `${CONFIG.PROMPT}\n\n请务必基于上面提供的文档内容进行分析，提取真实的信息。`
             }
         ],
-            temperature: 0.1, // 进一步降低温度以加快生成
-            max_tokens: 1024, // 减少输出长度以加快响应
-            top_p: 0.7 // 优化采样参数
+            temperature: 0.05, // 极低温度，最快生成
+            max_tokens: 800, // 进一步减少输出长度
+            top_p: 0.6 // 更确定的采样
     };
     
     try {
@@ -395,7 +395,7 @@ ${fileContent}`
         
         // 创建带超时的fetch请求
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90秒超时（给Netlify代理足够时间）
+        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25秒超时，避免Netlify 30秒限制
         
         const response = await fetch(`${CONFIG.BASE_URL}/chat/completions`, {
             method: 'POST',
