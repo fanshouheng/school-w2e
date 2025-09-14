@@ -1,87 +1,108 @@
-# 📄 Word文档信息提取工具
+# Word文档信息提取工具
 
-> 基于 Kimi AI 的智能 Word 文档信息提取工具，支持多文件批量处理
+一个基于Kimi AI的Word文档信息提取工具，可以自动提取文档中的学校、学科、讲课教师、班级等信息并生成表格。
 
-[![部署状态](https://api.netlify.com/api/v1/badges/your-site-id/deploy-status)](https://app.netlify.com/sites/your-site-name/deploys)
+## 🚀 功能特点
 
-## ✨ 功能特点
+- ✅ 支持.doc和.docx格式文档
+- ✅ 拖拽上传和点击上传
+- ✅ 实时处理状态显示
+- ✅ 自动生成表格结果
+- ✅ 支持复制和下载CSV
+- ✅ 响应式设计，支持移动端
+- ✅ 纯前端实现，无需后端
 
-- 🤖 **AI智能提取**：使用 Kimi K2-0905-preview 模型
-- 📄 **多文件支持**：支持同时处理多个 Word 文档
-- 📊 **自动表格**：智能生成结构化表格
-- ⏰ **时间标记**：自动添加处理时间
-- 📱 **响应式设计**：完美支持移动设备
-- 🚀 **即时处理**：上传后实时处理
+## 🛠️ 本地运行
 
-## 🎯 提取信息
+### ⚠️ 重要提示
+由于CORS跨域限制，需要使用代理服务器来运行应用。
 
-- 🏫 **学校名称**（第一行自动加时间）
-- 📚 **学科**
-- 👨‍🏫 **讲课教师** 
-- 🏛️ **班级**
-
-## 🌐 在线使用
-
-访问：[https://school-w2e.netlify.app](https://school-w2e.netlify.app)
-
-## 🚀 快速开始
-
-### 在线使用
-1. 访问在线版本
-2. 上传 Word 文档（支持多文件）
-3. 点击"开始处理"
-4. 查看提取结果
-
-### 本地运行
+### 方法1：Node.js代理服务器（推荐）
 ```bash
-git clone https://github.com/fanshouheng/school-w2e.git
-cd school-w2e
+# 安装依赖
+npm run install-deps
+
+# 启动开发服务器
+npm run dev
+```
+然后访问 http://localhost:3000
+
+### 方法2：Python HTTP服务器（仅用于测试UI）
+```bash
 python -m http.server 8080
 ```
+⚠️ 注意：此方法无法调用API，仅用于查看界面
 
-## 📁 项目结构
+### 方法3：使用在线CORS代理（临时方案）
+如果不想安装Node.js，可以使用公共CORS代理服务，但不推荐用于生产环境。
 
-```
-school-w2e/
-├── index.html          # 主页面
-├── style.css           # 样式文件
-├── script.js           # 核心逻辑
-├── netlify.toml        # Netlify 配置
-├── _redirects          # API 代理规则
-└── README.md           # 说明文档
-```
+## ☁️ 部署到Netlify
+
+### 方法1：拖拽部署（最简单）
+1. 登录 [Netlify](https://netlify.com)
+2. 将整个项目文件夹拖拽到"Want to deploy a new site without connecting to Git?"区域
+3. 等待部署完成
+
+### 方法2：Git部署
+1. 将代码推送到GitHub仓库
+2. 在Netlify选择"New site from Git"
+3. 连接GitHub仓库
+4. 使用默认设置部署
+
+### ✅ 部署优势
+- **自动CORS解决**：通过`_redirects`文件自动处理跨域问题
+- **免费HTTPS**：自动获得SSL证书
+- **CDN加速**：全球CDN加速访问
+
+## 📋 使用说明
+
+1. 上传Word文档（支持拖拽）
+2. 点击"开始处理"按钮
+3. 等待AI分析完成
+4. 查看提取的表格结果
+5. 可复制内容或下载CSV文件
 
 ## 🔧 技术栈
 
-- **前端**: HTML5 + CSS3 + JavaScript
-- **AI服务**: Kimi K2 (Moonshot AI)
-- **部署**: Netlify
-- **API**: RESTful
+- HTML5 + CSS3 + JavaScript
+- Kimi K2 AI API (kimi-k2-0905-preview)
+- 响应式设计
+- 现代浏览器API
 
-## 📝 使用说明
+## 📝 提取信息
 
-1. **单文件处理**：直接选择一个 Word 文档
-2. **多文件批量**：按住 Ctrl/Cmd 选择多个文件
-3. **拖拽上传**：支持直接拖拽文件到上传区域
-4. **结果导出**：支持复制表格和下载 CSV
+工具会自动提取以下信息：
+- 学校名称（第一行会添加时间）
+- 学科
+- 讲课教师
+- 班级信息
 
-## 🌟 支持格式
+## 🔑 API配置
 
-- `.docx` - Microsoft Word
-- `.doc` - Microsoft Word 97-2003
+应用已内置API配置，开箱即用。
 
-## ⚙️ 部署配置
+## ⚠️ 使用注意事项
 
-项目已配置自动部署到 Netlify：
-- ✅ API 代理已配置
-- ✅ CORS 问题已解决
-- ✅ 静态文件优化
-- ✅ 安全头部设置
+### API限制说明
+- **并发限制**：Kimi API有并发请求限制，请避免同时处理多个文档
+- **频率限制**：如遇到429错误，应用会自动重试，请耐心等待
+- **文档大小**：建议使用10MB以内的Word文档以获得最佳性能
 
-## 📞 技术支持
+### 最佳实践
+- 📄 **单个处理**：一次只处理一个文档，等待完成后再处理下一个
+- ⏱️ **等待间隔**：如遇到频率限制，建议等待1-2分钟后重试
+- 📋 **文档格式**：确保Word文档包含清晰的学校、学科、教师、班级信息
 
-如有问题，请提交 [Issue](https://github.com/fanshouheng/school-w2e/issues)
+## 📱 浏览器兼容性
 
-## 📄 许可证
+支持所有现代浏览器：
+- Chrome 60+
+- Firefox 60+
+- Safari 12+
+- Edge 79+
 
-MIT License
+## 🛡️ 隐私说明
+
+- 文档处理完全通过Kimi AI API进行
+- 不会在本地存储任何文档内容
+- 符合数据安全和隐私保护要求
