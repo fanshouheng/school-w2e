@@ -7,12 +7,20 @@
   to = "https://api.moonshot.cn/:splat"
   status = 200
   force = true
+  headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS", Access-Control-Allow-Headers = "Content-Type, Authorization"}
 
 # SPA路由处理
 [[redirects]]
   from = "/*"
   to = "/index.html"
   status = 200
+
+[[headers]]
+  for = "/api/*"
+  [headers.values]
+    Access-Control-Allow-Origin = "*"
+    Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS"
+    Access-Control-Allow-Headers = "Content-Type, Authorization"
 
 [[headers]]
   for = "/*"

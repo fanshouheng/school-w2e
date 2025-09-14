@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API测试</title>
+</head>
+<body>
+    <h1>Netlify API代理测试</h1>
+    <button onclick="testAPI()">测试API连接</button>
+    <div id="result"></div>
+
+    <script>
+        async function testAPI() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '测试中...';
+            
+            try {
+                // 测试基本连接
+                console.log('测试URL:', '/api/v1/models');
+                
+                const response = await fetch('/api/v1/models', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': 'Bearer sk-r9MRlIeoVS4dWLub7nk4NAnhYB72N81me7hbTwnuEW3xxiIg',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                console.log('响应状态:', response.status, response.statusText);
+                console.log('响应头:', [...response.headers.entries()]);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.innerHTML = `
+                        <h3>✅ API连接成功！</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const errorText = await response.text();
+                    resultDiv.innerHTML = `
+                        <h3>❌ API连接失败</h3>
+                        <p>状态: ${response.status} ${response.statusText}</p>
+                        <pre>${errorText}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('测试失败:', error);
+                resultDiv.innerHTML = `
+                    <h3>❌ 网络错误</h3>
+                    <p>${error.message}</p>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
