@@ -63,8 +63,17 @@ function initializeEventListeners() {
 function handleFileSelect(event) {
     const files = Array.from(event.target.files);
     if (files.length > 0) {
-        validateAndSetFiles(files);
+        // 如果已经有文件，询问用户是追加还是替换
+        if (currentFiles.length > 0) {
+            const shouldAppend = confirm(`已有 ${currentFiles.length} 个文件。\n\n点击"确定"追加新文件\n点击"取消"替换现有文件`);
+            validateAndSetFiles(files, shouldAppend);
+        } else {
+            validateAndSetFiles(files, false);
+        }
     }
+    
+    // 清空input的value，允许重复选择相同文件
+    event.target.value = '';
 }
 
 // 处理拖拽悬停
@@ -86,7 +95,13 @@ function handleDrop(event) {
     
     const files = Array.from(event.dataTransfer.files);
     if (files.length > 0) {
-        validateAndSetFiles(files);
+        // 如果已经有文件，询问用户是追加还是替换
+        if (currentFiles.length > 0) {
+            const shouldAppend = confirm(`已有 ${currentFiles.length} 个文件。\n\n点击"确定"追加新文件\n点击"取消"替换现有文件`);
+            validateAndSetFiles(files, shouldAppend);
+        } else {
+            validateAndSetFiles(files, false);
+        }
     }
 }
 
@@ -125,7 +140,7 @@ function validateAndSetFile(file) {
 }
 
 // 验证并设置多个文件
-function validateAndSetFiles(files) {
+function validateAndSetFiles(files, shouldAppend = false) {
     const validTypes = ['application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword'];
     const validExtensions = ['.doc', '.docx'];
     const validFiles = [];
@@ -134,6 +149,12 @@ function validateAndSetFiles(files) {
     files.forEach((file) => {
         const fileName = file.name.toLowerCase();
         const hasValidExtension = validExtensions.some(ext => fileName.endsWith(ext));
+        
+        // 检查是否是重复文件
+        if (shouldAppend && currentFiles.some(existingFile => existingFile.name === file.name && existingFile.size === file.size)) {
+            errorMessages.push(`文件 "${file.name}" 已经添加过了`);
+            return;
+        }
         
         // 检查文件类型
         if (!validTypes.includes(file.type) && !hasValidExtension) {
@@ -157,20 +178,32 @@ function validateAndSetFiles(files) {
         return;
     }
     
-    // 设置当前文件
-    currentFiles = validFiles;
-    uploadedFileIds = [];
+    // 设置当前文件（追加或替换）
+    if (shouldAppend) {
+        currentFiles = [...currentFiles, ...validFiles];
+        console.log(`📎 追加了 ${validFiles.length} 个文件，总计 ${currentFiles.length} 个文件`);
+    } else {
+        currentFiles = validFiles;
+        uploadedFileIds = [];
+        console.log(`📁 设置了 ${validFiles.length} 个新文件`);
+    }
     
-    // 显示文件信息
-    if (validFiles.length === 1) {
+    // 显示文件信息（显示所有当前文件，不只是新添加的）
+    if (currentFiles.length === 1) {
         // 单文件显示
-        elements.fileName.textContent = validFiles[0].name;
-        elements.fileSize.textContent = formatFileSize(validFiles[0].size);
+        elements.fileName.textContent = currentFiles[0].name;
+        elements.fileSize.textContent = formatFileSize(currentFiles[0].size);
     } else {
         // 多文件显示
-        const totalSize = validFiles.reduce((sum, file) => sum + file.size, 0);
-        elements.fileName.textContent = `已选择 ${validFiles.length} 个文件`;
+        const totalSize = currentFiles.reduce((sum, file) => sum + file.size, 0);
+        elements.fileName.textContent = `已选择 ${currentFiles.length} 个文件`;
         elements.fileSize.textContent = formatFileSize(totalSize);
+        
+        // 在控制台显示所有文件列表
+        console.log('📋 当前文件列表:');
+        currentFiles.forEach((file, index) => {
+            console.log(`  ${index + 1}. ${file.name} (${formatFileSize(file.size)})`);
+        });
     }
     
     elements.fileInfo.style.display = 'flex';
