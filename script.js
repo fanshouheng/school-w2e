@@ -222,16 +222,16 @@ async function processDocument() {
     hideResult();
     
     try {
-        const results = [];
         uploadedFileIds = [];
+        const allFileContents = [];
         
-        // 处理每个文件
+        // 第一步：上传所有文件并获取内容
         for (let i = 0; i < currentFiles.length; i++) {
             const file = currentFiles[i];
             const fileNum = i + 1;
             const totalFiles = currentFiles.length;
             
-            // 第一步：上传文件
+            // 上传文件
             showStatus('📤', `正在上传文件 ${fileNum}/${totalFiles}: ${file.name}`, true);
             const fileId = await uploadFileToMoonshot(file);
             uploadedFileIds.push(fileId);
@@ -239,22 +239,38 @@ async function processDocument() {
             // 添加短暂延迟，避免立即请求
             await new Promise(resolve => setTimeout(resolve, 500));
             
-            // 第二步：获取文件内容并处理文档
-            showStatus('📖', `正在处理文件 ${fileNum}/${totalFiles}: ${file.name}`, true);
-            const result = await processWithKimi(fileId);
+            // 获取文件内容
+            showStatus('📖', `正在读取文件 ${fileNum}/${totalFiles}: ${file.name}`, true);
+            const fileContent = await getFileContent(fileId);
             
-            results.push({
+            allFileContents.push({
                 fileName: file.name,
-                result: result
+                content: fileContent
             });
         }
         
-        // 第三步：显示结果
-        showStatus('✅', '所有文件处理完成！', false);
-        setTimeout(() => {
-            hideStatus();
-            showMultiFileResult(results);
-        }, 1000);
+        // 第二步：合并所有文件内容并统一处理
+        if (currentFiles.length === 1) {
+            // 单文件处理
+            showStatus('🤖', '正在分析文档内容...', true);
+            const result = await processMultipleFilesWithKimi(allFileContents);
+            
+            showStatus('✅', '文档处理完成！', false);
+            setTimeout(() => {
+                hideStatus();
+                showResult(result);
+            }, 1000);
+        } else {
+            // 多文件合并处理
+            showStatus('🤖', `正在合并分析 ${currentFiles.length} 个文档...`, true);
+            const result = await processMultipleFilesWithKimi(allFileContents);
+            
+            showStatus('✅', '所有文件合并处理完成！', false);
+            setTimeout(() => {
+                hideStatus();
+                showResult(result);
+            }, 1000);
+        }
         
     } catch (error) {
         console.error('处理文档时出错:', error);
@@ -358,7 +374,130 @@ async function getFileContent(fileId) {
     }
 }
 
-// 使用Kimi处理文档（带重试机制）
+// 处理多个文件内容（合并到一个表格）
+async function processMultipleFilesWithKimi(fileContents, retryCount = 0) {
+    const maxRetries = 3;
+    const baseDelay = 1000; // 1秒基础延迟，更快重试
+    
+    // 合并所有文件内容
+    let combinedContent = '';
+    if (fileContents.length === 1) {
+        // 单文件
+        combinedContent = fileContents[0].content;
+    } else {
+        // 多文件：合并内容并标注文件来源
+        combinedContent = fileContents.map((file, index) => {
+            return `=== 文档${index + 1}：${file.fileName} ===\n${file.content}\n`;
+        }).join('\n');
+    }
+    
+    const requestBody = {
+        model: CONFIG.MODEL,
+        messages: [
+            {
+                role: 'system',
+                content: `你是 Kimi，由 Moonshot AI 提供的人工智能助手，专门负责从Word文档中提取信息并整理成表格格式。
+
+重要说明：
+1. 你必须基于以下提供的真实文档内容进行分析
+2. 绝对不要使用任何示例数据或虚构信息
+3. 表格必须包含四列：学校、学科、讲课教师、班级
+4. 在第一行学校名称后加上当前日期，格式：学校名称（2025-09-14）
+5. ${fileContents.length > 1 ? '请将所有文档中的信息合并到同一个表格中，按文档顺序排列' : ''}
+
+文档内容：
+${combinedContent}`
+            },
+            {
+                role: 'user',
+                content: `${CONFIG.PROMPT}\n\n${fileContents.length > 1 ? '请将所有文档的信息合并到一个统一的表格中。' : ''}请务必基于上面提供的文档内容进行分析，提取真实的信息。`
+            }
+        ],
+            temperature: 0.2, // 稍微提高质量
+            max_tokens: 2000, // 为多文件合并提供更多空间
+            top_p: 0.8 // 平衡质量和速度
+    };
+    
+    try {
+        console.log('🚀 发送API请求:', {
+            url: `${CONFIG.BASE_URL}/chat/completions`,
+            model: CONFIG.MODEL,
+            fileCount: fileContents.length
+        });
+        
+        // 创建带超时的fetch请求
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120秒超时，直接调用API
+        
+        const response = await fetch(`${CONFIG.BASE_URL}/chat/completions`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${CONFIG.API_KEY}`,
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Origin': window.location.origin
+            },
+            body: JSON.stringify(requestBody),
+            signal: controller.signal,
+            mode: 'cors' // 明确启用CORS
+        });
+        
+        clearTimeout(timeoutId);
+        
+        console.log('📡 API响应状态:', response.status, response.statusText);
+        
+        if (response.status === 429 || response.status === 504) {
+            if (retryCount < maxRetries) {
+                const retryAfter = response.headers.get('Retry-After') || (retryCount + 1);
+                const delay = Math.max(baseDelay * Math.pow(2, retryCount), parseInt(retryAfter) * 1000);
+                
+                const errorMsg = response.status === 429 ? '请求频率限制' : '网关超时';
+                console.log(`${errorMsg}，${delay/1000}秒后重试...（第${retryCount + 1}次）`);
+                showStatus('⏳', `${errorMsg}，${delay/1000}秒后重试...`, true);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return await processMultipleFilesWithKimi(fileContents, retryCount + 1);
+            } else {
+                const errorMsg = response.status === 429 ? '请求频率过高，请稍后再试。建议等待1-2分钟后重新处理。' : '网关超时，请检查网络连接后重试。';
+                throw new Error(errorMsg);
+            }
+        }
+        
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(errorData.error?.message || `AI处理失败: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        console.log('✅ API响应数据:', data);
+        
+        const content = data.choices[0].message.content;
+        console.log('📝 提取的内容:', content);
+        
+        return content;
+        
+    } catch (error) {
+        console.error('❌ AI处理失败:', error);
+        
+        // 处理网络超时错误
+        if (error.name === 'AbortError') {
+            if (retryCount < maxRetries) {
+                const delay = baseDelay * Math.pow(2, retryCount);
+                console.log(`请求超时，${delay/1000}秒后重试...（第${retryCount + 1}次）`);
+                showStatus('⏳', `请求超时，${delay/1000}秒后重试...`, true);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return await processMultipleFilesWithKimi(fileContents, retryCount + 1);
+            } else {
+                throw new Error('请求超时，请检查网络连接后重试。');
+            }
+        }
+        
+        throw error;
+    }
+}
+
+// 使用Kimi处理文档（带重试机制）- 保留用于兼容性
 async function processWithKimi(fileId, retryCount = 0) {
     const maxRetries = 3;
     const baseDelay = 1000; // 1秒基础延迟，更快重试
