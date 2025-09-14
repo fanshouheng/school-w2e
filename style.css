@@ -498,10 +498,3 @@ body {
     font-weight: 500;
     margin-top: 8px;
 }
-
-.upload-text .processing-hint {
-    font-size: 0.85rem;
-    color: #f59e0b;
-    font-style: italic;
-    margin-top: 5px;
-}

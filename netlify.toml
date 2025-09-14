@@ -8,6 +8,8 @@
   status = 200
   force = true
   headers = {Access-Control-Allow-Origin = "*", Access-Control-Allow-Methods = "GET, POST, PUT, DELETE, OPTIONS", Access-Control-Allow-Headers = "Content-Type, Authorization"}
+  # 增加超时时间到120秒
+  timeout = "120s"
 
 # SPA路由处理
 [[redirects]]

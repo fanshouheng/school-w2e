@@ -1,7 +1,7 @@
 // 配置常量
 const CONFIG = {
     API_KEY: 'sk-r9MRlIeoVS4dWLub7nk4NAnhYB72N81me7hbTwnuEW3xxiIg',
-    BASE_URL: 'https://api.moonshot.cn/v1', // 直接调用Moonshot API
+    BASE_URL: '/api/v1', // 使用代理路径
     MODEL: 'kimi-k2-0905-preview', // 使用k2模型
     PROMPT: '请从文档中提取以下信息并生成表格：\n1. 学校名称（必须包含）\n2. 学科\n3. 讲课教师\n4. 班级\n\n要求：\n- 表格必须包含"学校"、"学科"、"讲课教师"、"班级"四列\n- 在第一行的学校名称后面加上当前时间，格式如：学校名称（2025-01-15）\n- 请确保提取的是文档中的真实信息，不要使用示例数据\n- 以Markdown表格格式输出',
     MAX_FILE_SIZE: 10 * 1024 * 1024 // 10MB
@@ -381,9 +381,9 @@ ${fileContent}`
                 content: `${CONFIG.PROMPT}\n\n请务必基于上面提供的文档内容进行分析，提取真实的信息。`
             }
         ],
-        temperature: 0.3, // 降低温度以提高稳定性和速度
-        max_tokens: 2048, // 限制输出长度以加快响应
-        top_p: 0.8 // 优化采样参数
+            temperature: 0.1, // 进一步降低温度以加快生成
+            max_tokens: 1024, // 减少输出长度以加快响应
+            top_p: 0.7 // 优化采样参数
     };
     
     try {
@@ -395,7 +395,7 @@ ${fileContent}`
         
         // 创建带超时的fetch请求
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒超时
+        const timeoutId = setTimeout(() => controller.abort(), 90000); // 90秒超时（给Netlify代理足够时间）
         
         const response = await fetch(`${CONFIG.BASE_URL}/chat/completions`, {
             method: 'POST',
