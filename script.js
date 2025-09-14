@@ -1,7 +1,7 @@
 // 配置常量
 const CONFIG = {
     API_KEY: 'sk-r9MRlIeoVS4dWLub7nk4NAnhYB72N81me7hbTwnuEW3xxiIg',
-    BASE_URL: '/api/v1', // 使用代理路径
+    BASE_URL: 'https://api.moonshot.cn/v1', // 直接调用API，绕过代理
     MODEL: 'kimi-k2-0905-preview', // 使用k2模型
     PROMPT: '请从文档中提取以下信息并生成表格：\n1. 学校名称（必须包含）\n2. 学科\n3. 讲课教师\n4. 班级\n\n要求：\n- 表格必须包含"学校"、"学科"、"讲课教师"、"班级"四列\n- 在第一行的学校名称后面加上当前时间，格式如：学校名称（2025-01-15）\n- 请确保提取的是文档中的真实信息，不要使用示例数据\n- 以Markdown表格格式输出',
     MAX_FILE_SIZE: 10 * 1024 * 1024 // 10MB
@@ -289,9 +289,12 @@ async function uploadFileToMoonshot(file, retryCount = 0) {
         const response = await fetch(`${CONFIG.BASE_URL}/files`, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${CONFIG.API_KEY}`
+                'Authorization': `Bearer ${CONFIG.API_KEY}`,
+                'Accept': 'application/json',
+                'Origin': window.location.origin
             },
-            body: formData
+            body: formData,
+            mode: 'cors' // 明确启用CORS
         });
         
         // 处理429错误
@@ -333,8 +336,11 @@ async function getFileContent(fileId) {
         const response = await fetch(`${CONFIG.BASE_URL}/files/${fileId}/content`, {
             method: 'GET',
             headers: {
-                'Authorization': `Bearer ${CONFIG.API_KEY}`
-            }
+                'Authorization': `Bearer ${CONFIG.API_KEY}`,
+                'Accept': 'application/json',
+                'Origin': window.location.origin
+            },
+            mode: 'cors' // 明确启用CORS
         });
         
         if (!response.ok) {
@@ -381,9 +387,9 @@ ${fileContent}`
                 content: `${CONFIG.PROMPT}\n\n请务必基于上面提供的文档内容进行分析，提取真实的信息。`
             }
         ],
-            temperature: 0.05, // 极低温度，最快生成
-            max_tokens: 800, // 进一步减少输出长度
-            top_p: 0.6 // 更确定的采样
+            temperature: 0.2, // 稍微提高质量
+            max_tokens: 1500, // 允许更完整的输出
+            top_p: 0.8 // 平衡质量和速度
     };
     
     try {
@@ -395,16 +401,19 @@ ${fileContent}`
         
         // 创建带超时的fetch请求
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 25000); // 25秒超时，避免Netlify 30秒限制
+        const timeoutId = setTimeout(() => controller.abort(), 120000); // 120秒超时，直接调用API
         
         const response = await fetch(`${CONFIG.BASE_URL}/chat/completions`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${CONFIG.API_KEY}`,
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Origin': window.location.origin
             },
             body: JSON.stringify(requestBody),
-            signal: controller.signal
+            signal: controller.signal,
+            mode: 'cors' // 明确启用CORS
         });
         
         clearTimeout(timeoutId);
