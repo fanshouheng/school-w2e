@@ -381,7 +381,9 @@ ${fileContent}`
                 content: `${CONFIG.PROMPT}\n\n请务必基于上面提供的文档内容进行分析，提取真实的信息。`
             }
         ],
-        temperature: 0.6
+        temperature: 0.3, // 降低温度以提高稳定性和速度
+        max_tokens: 2048, // 限制输出长度以加快响应
+        top_p: 0.8 // 优化采样参数
     };
     
     try {
@@ -391,30 +393,39 @@ ${fileContent}`
             fileId: fileId
         });
         
+        // 创建带超时的fetch请求
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 60000); // 60秒超时
+        
         const response = await fetch(`${CONFIG.BASE_URL}/chat/completions`, {
             method: 'POST',
             headers: {
                 'Authorization': `Bearer ${CONFIG.API_KEY}`,
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify(requestBody)
+            body: JSON.stringify(requestBody),
+            signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         console.log('📡 API响应状态:', response.status, response.statusText);
         
-        // 处理429错误（请求过多）
-        if (response.status === 429) {
+        // 处理429错误（请求过多）和504错误（网关超时）
+        if (response.status === 429 || response.status === 504) {
             if (retryCount < maxRetries) {
                 const retryAfter = response.headers.get('Retry-After') || (retryCount + 1);
                 const delay = Math.max(baseDelay * Math.pow(2, retryCount), parseInt(retryAfter) * 1000);
                 
-                console.log(`请求频率限制，${delay/1000}秒后重试...（第${retryCount + 1}次）`);
-                showStatus('⏳', `请求频率限制，${delay/1000}秒后重试...`, true);
+                const errorMsg = response.status === 429 ? '请求频率限制' : '网关超时';
+                console.log(`${errorMsg}，${delay/1000}秒后重试...（第${retryCount + 1}次）`);
+                showStatus('⏳', `${errorMsg}，${delay/1000}秒后重试...`, true);
                 
                 await new Promise(resolve => setTimeout(resolve, delay));
                 return await processWithKimi(fileId, retryCount + 1);
             } else {
-                throw new Error('请求频率过高，请稍后再试。建议等待1-2分钟后重新处理。');
+                const errorMsg = response.status === 429 ? '请求频率过高，请稍后再试。建议等待1-2分钟后重新处理。' : '网关超时，请检查网络连接后重试。';
+                throw new Error(errorMsg);
             }
         }
         
@@ -432,6 +443,22 @@ ${fileContent}`
         return content;
         
     } catch (error) {
+        console.error('❌ AI处理失败:', error);
+        
+        // 处理网络超时错误
+        if (error.name === 'AbortError') {
+            if (retryCount < maxRetries) {
+                const delay = baseDelay * Math.pow(2, retryCount);
+                console.log(`请求超时，${delay/1000}秒后重试...（第${retryCount + 1}次）`);
+                showStatus('⏳', `请求超时，${delay/1000}秒后重试...`, true);
+                
+                await new Promise(resolve => setTimeout(resolve, delay));
+                return await processWithKimi(fileId, retryCount + 1);
+            } else {
+                throw new Error('请求超时，请检查网络连接后重试。');
+            }
+        }
+        
         if (error.name === 'TypeError' && error.message.includes('fetch')) {
             throw new Error('网络连接错误，请检查网络连接后重试');
         }
